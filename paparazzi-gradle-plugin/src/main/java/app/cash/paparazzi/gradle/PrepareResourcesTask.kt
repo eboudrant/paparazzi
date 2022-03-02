@@ -66,7 +66,6 @@ abstract class PrepareResourcesTask : DefaultTask() {
   private val projectDirectory = project.layout.projectDirectory
 
   @TaskAction
-  @OptIn(ExperimentalStdlibApi::class)
   fun writeResourcesFile() {
     val out = paparazziResources.get().asFile
     out.delete()
