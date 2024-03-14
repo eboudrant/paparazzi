@@ -2,7 +2,6 @@ package app.cash.paparazzi.sample
 
 import androidx.compose.runtime.Composable
 import app.cash.paparazzi.DeviceConfig
-import app.cash.paparazzi.accessibility.AccessibilityRenderExtension
 import app.cash.paparazzi.Paparazzi
 import org.junit.rules.TestRule
 import org.junit.runner.Description
@@ -12,12 +11,11 @@ class MyPaparazziRule : TestRule {
 
   private val normal = Paparazzi(
     deviceConfig = DeviceConfig.PIXEL,
-    renderExtensions = setOf(AccessibilityRenderExtension())
   )
 
   private val scaled = Paparazzi(
-    deviceConfig = DeviceConfig.PIXEL.copy(fontScale = 2f),
-    renderExtensions = setOf(AccessibilityRenderExtension())
+    deviceConfig = DeviceConfig.PIXEL
+      .copy(fontScale = 2f),
   )
 
   override fun apply(base: Statement, description: Description): Statement {

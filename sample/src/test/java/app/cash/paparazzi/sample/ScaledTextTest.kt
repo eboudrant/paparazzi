@@ -6,6 +6,7 @@ import org.junit.Rule
 import org.junit.Test
 
 class ScaledTextTest {
+
   @get:Rule
   val paparazzi = MyPaparazziRule()
 
