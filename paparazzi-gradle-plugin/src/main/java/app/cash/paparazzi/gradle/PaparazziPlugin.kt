@@ -65,7 +65,15 @@ public class PaparazziPlugin @Inject constructor(
   private val buildOperationExecutor: BuildOperationExecutor
 ) : Plugin<Project> {
   override fun apply(project: Project) {
-    val supportedPlugins = listOf("com.android.application", "com.android.library", "com.android.dynamic-feature")
+    One of com.android.application, com.android.library, com.android.dynamic-feature must be applied for Paparazzi to work properly.
+
+    val supportedPlugins = listOf(
+      "com.android.application", 
+      "com.android.library", 
+      "com.android.dynamic-feature", 
+      "com.android.kotlin.multiplatform.library",
+    )
+    
     project.afterEvaluate {
       check(supportedPlugins.any { project.plugins.hasPlugin(it) }) {
         "One of ${supportedPlugins.joinToString(", ")} must be applied for Paparazzi to work properly."
