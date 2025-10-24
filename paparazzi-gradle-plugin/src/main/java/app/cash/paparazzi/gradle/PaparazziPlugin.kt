@@ -28,6 +28,7 @@ import com.android.build.api.variant.AndroidComponentsExtension
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.api.variant.DynamicFeatureAndroidComponentsExtension
 import com.android.build.api.variant.HasUnitTest
+import com.android.build.api.variant.KotlinMultiplatformAndroidComponentsExtension
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
@@ -65,12 +66,20 @@ public class PaparazziPlugin @Inject constructor(
   private val buildOperationExecutor: BuildOperationExecutor
 ) : Plugin<Project> {
   override fun apply(project: Project) {
-    val supportedPlugins = listOf("com.android.application", "com.android.library", "com.android.dynamic-feature")
+    val supportedPlugins = listOf(
+      "com.android.application",
+      "com.android.library",
+      "com.android.dynamic-feature",
+      "com.android.kotlin.multiplatform.library",
+    )
     project.afterEvaluate {
       check(supportedPlugins.any { project.plugins.hasPlugin(it) }) {
         "One of ${supportedPlugins.joinToString(", ")} must be applied for Paparazzi to work properly."
       }
-      project.plugins.withId("org.jetbrains.kotlin.multiplatform") {
+      // Only validate Android target if using standalone KMP plugin without Android KMP library plugin since
+      // com.android.kotlin.multiplatform.library already guarantees that you have an Android target configured.
+      if (project.plugins.hasPlugin("org.jetbrains.kotlin.multiplatform") &&
+          !project.plugins.hasPlugin("com.android.kotlin.multiplatform.library")) {
         val kmpExtension = project.extensions.getByType(KotlinMultiplatformExtension::class.java)
         check(kmpExtension.targets.any { target -> target is KotlinAndroidTarget }) {
           "There must be an Android target configured when using Paparazzi with the Kotlin Multiplatform Plugin"
@@ -84,6 +93,7 @@ public class PaparazziPlugin @Inject constructor(
         when (androidComponents) {
           is LibraryAndroidComponentsExtension,
           is ApplicationAndroidComponentsExtension,
+          is KotlinMultiplatformAndroidComponentsExtension,
           is DynamicFeatureAndroidComponentsExtension -> Unit
           // exhaustive to avoid potential breaking changes in future AGP releases
           else -> error("${androidComponents.javaClass.name} from $plugin is not supported in Paparazzi")
@@ -382,7 +392,19 @@ public class PaparazziPlugin @Inject constructor(
     } else {
       dependencies.create("app.cash.paparazzi:paparazzi:$VERSION")
     }
-    configurations.getByName("testImplementation").dependencies.add(dependency)
+    val kmpExtension = extensions.findByType(KotlinMultiplatformExtension::class.java)
+    if (kmpExtension != null) {
+      // Defer until source sets are configured
+      kmpExtension.sourceSets.whenObjectAdded { sourceSet ->
+        if (sourceSet.name == "androidUnitTest") {
+          sourceSet.dependencies {
+            implementation(dependency)
+          }
+        }
+      }
+    } else {
+      configurations.getByName("testImplementation").dependencies.add(dependency)
+    }
   }
 
   private fun Project.isInternal(): Boolean = providers.gradleProperty("app.cash.paparazzi.internal").orNull == "true"
